@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				mixer: {
+					dark: '#0F172A',
+					primary: '#3B82F6',
+					secondary: '#8B5CF6',
+					accent: '#2DD4BF',
+					success: '#22C55E',
+					warning: '#F59E0B',
+					error: '#EF4444',
 				}
 			},
 			borderRadius: {
@@ -84,12 +94,29 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'flow': {
+					'0%': { backgroundPosition: '0% 50%' },
+					'50%': { backgroundPosition: '100% 50%' },
+					'100%': { backgroundPosition: '0% 50%' }
+				},
+				'pulse-opacity': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.5' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'flow': 'flow 5s ease infinite',
+				'pulse-opacity': 'pulse-opacity 2s ease-in-out infinite'
+			},
+			backgroundImage: {
+				'gradient-flow': 'linear-gradient(-45deg, #3B82F6, #8B5CF6, #2DD4BF, #3B82F6)',
+			},
+			backgroundSize: {
+				'400%': '400% 400%',
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
