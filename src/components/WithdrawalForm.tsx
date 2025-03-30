@@ -3,13 +3,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, CircleOff, ShieldAlert, Key } from 'lucide-react';
+import { ChevronRight, CircleOff, ShieldAlert, Key, CreditCard } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { StoredNote } from '@/lib/noteStorage';
 import { parseNote, generateProof, createCommitment } from '@/lib/cryptoUtils';
-import { withdraw, getMerkleProof } from '@/lib/mockBlockchain';
+import { withdraw, getMerkleProof, FEE_PERCENTAGE } from '@/lib/mockBlockchain';
 
 interface WithdrawalFormProps {
   selectedNote: StoredNote | null;
@@ -78,9 +78,14 @@ export function WithdrawalForm({ selectedNote, onWithdrawalComplete }: Withdrawa
       );
       
       if (success) {
+        // Calculate fee amount
+        const amountNumber = parseFloat(amount);
+        const feeAmount = amountNumber * (FEE_PERCENTAGE / 100);
+        const netAmount = amountNumber - feeAmount;
+        
         toast({
           title: "Withdrawal successful",
-          description: `${amount} ${currency} has been sent to your address`,
+          description: `${netAmount.toFixed(6)} ${currency} has been sent to your address (${FEE_PERCENTAGE}% fee applied)`,
         });
         onWithdrawalComplete(true);
       } else {
@@ -119,6 +124,16 @@ export function WithdrawalForm({ selectedNote, onWithdrawalComplete }: Withdrawa
 
   const noteData = parseNote(selectedNote.note);
   
+  // Calculate fee if note data is valid
+  let feeAmount = 0;
+  let netAmount = 0;
+  
+  if (noteData) {
+    const amountNumber = parseFloat(noteData.amount);
+    feeAmount = amountNumber * (FEE_PERCENTAGE / 100);
+    netAmount = amountNumber - feeAmount;
+  }
+  
   return (
     <Card>
       <CardHeader>
@@ -148,6 +163,17 @@ export function WithdrawalForm({ selectedNote, onWithdrawalComplete }: Withdrawa
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Amount:</span>
               <span className="font-medium">{noteData?.amount}</span>
+            </div>
+            
+            {/* Fee information */}
+            <Separator className="my-1" />
+            <div className="flex justify-between text-amber-500">
+              <span className="text-sm">Service Fee ({FEE_PERCENTAGE}%):</span>
+              <span className="font-medium">-{feeAmount.toFixed(6)} {noteData?.currency}</span>
+            </div>
+            <div className="flex justify-between font-medium">
+              <span className="text-sm">You will receive:</span>
+              <span>{netAmount.toFixed(6)} {noteData?.currency}</span>
             </div>
           </div>
         </div>

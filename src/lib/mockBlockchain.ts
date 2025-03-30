@@ -19,6 +19,10 @@ export const CURRENCY_DETAILS = {
   USDC: { symbol: '$', decimals: 6 },
 };
 
+// Fee configuration
+export const FEE_PERCENTAGE = 0.5; // 0.5% fee
+export const FEE_RECIPIENT = '0x7B39C55E37AE415F36Bcb23156b98622c50293f1'; // Address that collects fees
+
 // Mock blockchain state
 export interface MixerPool {
   currency: string;
@@ -26,6 +30,7 @@ export interface MixerPool {
   commitments: string[];
   nullifiers: Set<string>;
   merkleTree: MerkleTree;
+  totalFees: number; // Track total fees collected for this pool
 }
 
 export interface WithdrawalEvent {
@@ -34,6 +39,7 @@ export interface WithdrawalEvent {
   nullifierHash: string;
   recipient: string;
   timestamp: number;
+  fee?: number; // Amount taken as fee
 }
 
 // A map of currency-denomination to mixer pools
@@ -51,6 +57,7 @@ export function initializeMixerPools(): void {
         commitments: [],
         nullifiers: new Set<string>(),
         merkleTree: new MerkleTree(),
+        totalFees: 0,
       };
     });
   });
@@ -78,6 +85,12 @@ export function deposit(currency: string, denomination: string, commitment: stri
   }
 }
 
+// Calculate fee amount based on denomination and percentage
+function calculateFee(currency: string, denomination: string): number {
+  const amount = parseFloat(denomination);
+  return amount * (FEE_PERCENTAGE / 100);
+}
+
 // Withdraw from a mixer pool
 export function withdraw(
   currency: string,
@@ -101,6 +114,12 @@ export function withdraw(
       throw new Error('Invalid proof');
     }
     
+    // Calculate fee
+    const feeAmount = calculateFee(currency, denomination);
+    
+    // Update fee tracking
+    pool.totalFees += feeAmount;
+    
     // Record the withdrawal
     pool.nullifiers.add(nullifierHash);
     withdrawalEvents.push({
@@ -109,6 +128,7 @@ export function withdraw(
       nullifierHash,
       recipient,
       timestamp: Date.now(),
+      fee: feeAmount,
     });
     
     return true;
@@ -158,6 +178,31 @@ export function getMerkleProof(currency: string, denomination: string, commitmen
   }
 }
 
+// Get total fees collected for a specific pool
+export function getTotalFees(currency: string, denomination: string): number {
+  try {
+    const pool = getMixerPool(currency, denomination);
+    return pool.totalFees;
+  } catch {
+    return 0;
+  }
+}
+
+// Get total fees collected across all pools
+export function getAllTotalFees(): Record<string, number> {
+  const result: Record<string, number> = {};
+  
+  Object.keys(mixerPools).forEach(key => {
+    const [currency, denomination] = key.split('-');
+    if (!result[currency]) {
+      result[currency] = 0;
+    }
+    result[currency] += mixerPools[key].totalFees;
+  });
+  
+  return result;
+}
+
 // Initialize the mixer pools
 initializeMixerPools();
 
@@ -198,5 +243,6 @@ demoWithdrawals.forEach(({ currency, denomination, timestamp }) => {
     nullifierHash: `0x${Math.random().toString(16).slice(2)}${'0'.repeat(40)}`,
     recipient: `0x${Math.random().toString(16).slice(2)}${'0'.repeat(40)}`,
     timestamp,
+    fee: calculateFee(currency, denomination),
   });
 });
